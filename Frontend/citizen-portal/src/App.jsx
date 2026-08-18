@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-ro
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import Landing from './pages/Landing';
 import ReportComplaint from './pages/ReportComplaint';
 import MyComplaints from './pages/MyComplaints';
 import ComplaintDetails from './pages/ComplaintDetails';
@@ -21,6 +20,14 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
   return children;
+};
+
+const RootRoute = () => {
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return <Navigate to="/dashboard" replace />;
 };
 
 function App() {
@@ -84,7 +91,7 @@ function App() {
 
         <main className="main-content">
           <Routes>
-            <Route path="/" element={<Landing />} />
+            <Route path="/" element={<RootRoute />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/emergency" element={<Emergency />} />

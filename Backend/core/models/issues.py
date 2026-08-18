@@ -83,3 +83,7 @@ class Issue(Base):
     status_history = relationship("IssueStatusHistory", back_populates="issue", cascade="all, delete-orphan", order_by="IssueStatusHistory.changed_at.desc()")
     embedding_entry = relationship("IssueEmbedding", back_populates="issue", uselist=False, cascade="all, delete-orphan")
     credibility_logs = relationship("CredibilityLog", back_populates="issue")
+
+    @property
+    def history(self):
+        return self.status_history

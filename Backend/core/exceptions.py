@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from sqlalchemy.exc import DBAPIError, OperationalError
 
 
 class AppException(Exception):
@@ -146,9 +147,11 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(OSError)
-    async def db_offline_handler(request: Request, exc: OSError) -> JSONResponse:
+    @app.exception_handler(DBAPIError)
+    @app.exception_handler(OperationalError)
+    async def db_offline_handler(request: Request, exc: Exception) -> JSONResponse:
         """
-        Intercepts PostgreSQL connection-refused errors (errno 10061 / ECONNREFUSED).
+        Intercepts PostgreSQL connection-refused or database offline/unreachable errors.
         Returns 503 with an empty-but-valid payload so the frontend can degrade gracefully
         instead of receiving a raw 500 that crashes React components.
         """

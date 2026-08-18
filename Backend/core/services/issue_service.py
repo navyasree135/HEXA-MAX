@@ -490,7 +490,10 @@ class IssueService:
         if priority:
             conditions.append(Issue.priority == priority)
         if status:
-            conditions.append(Issue.status == status)
+            if isinstance(status, (list, tuple)):
+                conditions.append(Issue.status.in_(status))
+            else:
+                conditions.append(Issue.status == status)
 
         if conditions:
             stmt = stmt.where(and_(*conditions))

@@ -90,6 +90,25 @@ export const AuditLogs = () => {
     { id: 'AUD-897', timestamp: '2026-08-16 09:16:00', actor: 'System Credibility Guard', action: 'Flagged ISS-2026-008890 as Malicious. User Credibility penalty applied (-0.15)', target: 'citizen.spammer@example.com', ip: '49.37.10.44' },
   ];
 
+  const realAuditTrail = useMemo(() => {
+    const list = [];
+    complaints.forEach((c) => {
+      if (c.history && Array.isArray(c.history)) {
+        c.history.forEach((h) => {
+          list.push({
+            id: `AUD-${h.id}`,
+            timestamp: new Date(h.changed_at).toLocaleString(),
+            actor: h.changed_by_name || 'System Guard',
+            action: `${h.new_status === 'in_progress' ? 'Claimed' : h.new_status === 'resolved' ? 'Resolved' : h.new_status === 'malicious' ? 'Flagged Malicious' : 'Updated'} Ticket ${c.issue_id} (${c.category}). Notes: ${h.notes || 'None'}`,
+            target: c.issue_id,
+            ip: 'internal-api'
+          });
+        });
+      }
+    });
+    return [...list, ...mockAuditTrail].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  }, [complaints]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Header */}
@@ -421,7 +440,7 @@ export const AuditLogs = () => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {mockAuditTrail.map((log) => (
+            {realAuditTrail.map((log) => (
               <div
                 key={log.id}
                 style={{

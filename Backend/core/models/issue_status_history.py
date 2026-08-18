@@ -35,3 +35,7 @@ class IssueStatusHistory(Base):
     # Relationships
     issue = relationship("Issue", back_populates="status_history")
     changed_by_user = relationship("User")
+
+    @property
+    def changed_by_name(self) -> Optional[str]:
+        return self.changed_by_user.name if self.changed_by_user else None

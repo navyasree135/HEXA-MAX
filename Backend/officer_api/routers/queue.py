@@ -30,18 +30,18 @@ async def get_officer_queue(
 
     db_status = None
     if status:
-        status_lower = status.lower()
-        if status_lower == "pending":
-            db_status = IssueStatus.NEW
-        else:
-            try:
-                db_status = IssueStatus(status_lower)
-            except ValueError:
-                from fastapi import HTTPException
-                raise HTTPException(
-                    status_code=422,
-                    detail=f"Invalid status: '{status}'. Must be 'pending' or one of {[s.value for s in IssueStatus]}"
-                )
+      status_lower = status.lower()
+      if status_lower == "pending":
+          db_status = [IssueStatus.NEW, IssueStatus.IN_PROGRESS]
+      else:
+          try:
+              db_status = IssueStatus(status_lower)
+          except ValueError:
+              from fastapi import HTTPException
+              raise HTTPException(
+                  status_code=422,
+                  detail=f"Invalid status: '{status}'. Must be 'pending' or one of {[s.value for s in IssueStatus]}"
+              )
 
     issues, total = await IssueService.get_queue(
         db=db,

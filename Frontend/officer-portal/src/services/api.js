@@ -123,20 +123,33 @@ class ApiClient {
       const res = await this.get(`/officer/queue?${query}`);
       const list = res.items || res.complaints || res;
       // Normalize FastAPI issue schema to frontend model if needed
-      const normalized = Array.isArray(list) ? list.map(item => ({
-        id: item.id || item.issue_id,
-        title: item.title,
-        description: item.description,
-        department: item.department || item.department_name,
-        region: item.ward || item.region || 'Mumbai',
-        priority: (item.priority || 'normal').toLowerCase(),
-        status: (item.status || 'pending').toLowerCase(),
-        is_emergency: item.priority === 'emergency' || item.priority === 'high' || item.is_emergency,
-        ai_summary: item.ai_summary || item.summary || item.description,
-        sla_deadline: item.sla_deadline || item.target_resolution_at,
-        created_at: item.created_at,
-        citizen: item.citizen || { name: item.citizen_name || 'Citizen' },
-      })) : [];
+      const normalized = Array.isArray(list) ? list.map(item => {
+        const isAccepted = (item.status || '').toLowerCase() === 'in_progress' || (item.status || '').toLowerCase() === 'resolved';
+        const claimHistory = item.history?.find(h => h.new_status === 'in_progress');
+        const assignments = isAccepted ? [{
+          action: 'accepted',
+          officer: {
+            name: claimHistory?.changed_by_name || 'Field Officer'
+          }
+        }] : [];
+
+        return {
+          id: item.id || item.issue_id,
+          title: item.title || item.ai_summary || 'Municipal Grievance',
+          description: item.description || item.transcript,
+          department: item.department || item.department_name,
+          region: item.ward || item.region || 'Mumbai',
+          priority: (item.priority || 'normal').toLowerCase(),
+          status: (item.status || 'pending').toLowerCase(),
+          is_emergency: item.priority === 'emergency' || item.priority === 'high' || item.is_emergency,
+          ai_summary: item.ai_summary || item.summary || item.description,
+          sla_deadline: item.sla_deadline || item.target_resolution_at,
+          created_at: item.created_at,
+          citizen: item.citizen || { name: item.citizen_name || 'Citizen' },
+          assignments: assignments,
+          history: item.history || []
+        };
+      }) : [];
       return { complaints: normalized, total: res.total || normalized.length };
     } catch {
       // Fallback to /complaints
@@ -149,11 +162,20 @@ class ApiClient {
     try {
       const res = await this.get(`/officer/issues/${id}`);
       const c = res.issue || res;
+      const isAccepted = (c.status || '').toLowerCase() === 'in_progress' || (c.status || '').toLowerCase() === 'resolved';
+      const claimHistory = c.history?.find(h => h.new_status === 'in_progress');
+      const assignments = isAccepted ? [{
+        action: 'accepted',
+        officer: {
+          name: claimHistory?.changed_by_name || 'Field Officer'
+        }
+      }] : [];
+
       return {
         complaint: {
           id: c.id,
-          title: c.title,
-          description: c.description,
+          title: c.title || c.ai_summary || 'Municipal Grievance',
+          description: c.description || c.transcript,
           department: c.department || c.department_name,
           region: c.ward || c.region,
           priority: (c.priority || 'normal').toLowerCase(),
@@ -164,6 +186,8 @@ class ApiClient {
           created_at: c.created_at,
           citizen: c.citizen || { name: c.citizen_name || 'Citizen' },
           timeline: c.timeline || [],
+          assignments: assignments,
+          history: c.history || []
         }
       };
     } catch {
